@@ -1,4 +1,4 @@
-# 🚌 Abfahrten-Board
+# 🚌 Farbcodiertes Echtzeit-Warnsystem für Bus- und Bahnanzeigen
 
 **Farbcodiertes Echtzeit-Abfahrtssystem für BVG Berlin** – ein browserbasierter Prototyp von Christian Sysa.
 
