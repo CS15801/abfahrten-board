@@ -17,7 +17,7 @@ Einfach den Link öffnen – keine Installation, kein Account, kein technisches 
 
 ## 💡 Warum ich das gebaut habe
 
-Als jemand, der regelmäßig öffentliche Verkehrsmittel nutzt, kenne ich das Problem: Man steht an der Haltestelle, schaut auf eine lange Liste von Abfahrten – und muss dann erst suchen, welche Linie tatsächlich bald kommt. Die klassische Anzeigetafel listet alles chronologisch auf, aber das Auge muss jedes Mal neu scannen.
+Als jemand, der regelmäßig öffentliche Verkehrsmittel nutzt, kenne ich das Problem: Man geht in Richtung Haltestelle und erkennt von Weitem, wenn überhaupt, ob die Zeitanzeige ein- oder zweistellig ist. Hat man nun 2 oder 8 Minuten? Diese Unwissenheit könnte durch ein Farbcodiertes Echtzeit-Warnsyste aus der Welt geschaffen werden.
 
 Meine Idee war simpel: **Was wäre, wenn die Dringlichkeit sofort sichtbar wäre?** Nicht durch Zahlen, sondern durch Farbe. Das Board soll auf einen Blick zeigen, was gleich kommt – ohne dass man aktiv lesen oder nachdenken muss. Ein System, das für alle verständlich ist: für Pendler, Touristen und Menschen, die Abfahrtspläne sonst schwer lesen.
 
@@ -33,8 +33,7 @@ Das Abfahrten-Board ist eine reine **Client-Side-Applikation** – es läuft kom
 | **v6.bvg.transport.rest API** | Echtzeit-Abfahrtsdaten für Berlin/Brandenburg per Fetch-Request (Community-Projekt von Jannis R., basierend auf BVG-HAFAS) |
 | **Intervall-Refresh** | Automatische Aktualisierung alle 30 Sekunden |
 | **CSS-Variablen & Flexbox** | Responsives Layout für alle Bildschirmgrößen |
-| **GitHub Pages** | Kostenloses Hosting direkt aus dem Repository |
-| **Google Fonts: Courier Prime** | Monospace-Font für Split-Flap-Ästhetik |
+
 
 Die Abfahrtsdaten werden live von der öffentlichen Community-API `v6.bvg.transport.rest` abgerufen und direkt im Browser verarbeitet – keine Daten werden gespeichert oder weitergeleitet. Kein API-Schlüssel erforderlich.
 
