@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abfahrtsplan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier Prime', monospace;
+      background: #f5f5f5;
+      color: #333;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      background: #fff;
+      border: 3px solid #333;
+      padding: 40px;
+      max-width: 1040px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+      gap: 16px;
+    }
+
+    .logo { font-size: 36px; font-weight: 700; letter-spacing: 3px; flex-shrink: 0; }
+    .logo span { color: #cc0000; }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-info {
+      padding: 0 18px;
+      height: 40px;
+      background: transparent;
+      color: #333;
+      border: 2px solid #333;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Courier Prime', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-info:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .btn-info:focus-visible {
+      outline: 2px solid #cc0000;
+      outline-offset: 3px;
+    }
+
+
+    .time-display {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .api-info {
+      font-size: 11px;
+      color: #777;
+      margin-bottom: 22px;
+      padding: 9px 14px;
+      background: #f9f9f9;
+      border-left: 3px solid #aaa;
+      letter-spacing: 0.3px;
+    }
+    .api-info strong { color: #333; }
+
+    .controls {
+      margin-bottom: 25px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .select-section { position: relative; }
+
+    .select-section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #666;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0 14px;
+      height: 50px;
+      font-size: 16px;
+      font-family: 'Courier Prime', monospace;
+      border: 2px solid #333;
+      background: #fff;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #cc0000;
+      box-shadow: inset 0 0 0 2px #cc0000;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      list-style: none;
+      background: #fff;
+      border: 2px solid #333;
+      border-top: none;
+      max-height: 320px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+
+    .search-results.active { display: block; }
+
+    .search-results li {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .search-results li:hover { background: #cc0000; color: #fff; font-weight: 700; }
+    .search-results li:last-child { border-bottom: none; }
+
+    .stop-meta { display: block; font-size: 11px; opacity: 0.7; margin-top: 3px; }
+
+    .btn {
+      padding: 0 24px;
+      height: 50px;
+      background: #333;
+      color: #fff;
+      border: 2px solid #333;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Courier Prime', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { background: #cc0000; border-color: #cc0000; }
+    .btn:active { background: #990000; }
+
+    /* ── DEPARTURE BOARD ──────────────────────────────────────── */
+
+    .departure-board {
+      background: #0a0a0a;
+      color: #ffd700;
+      display: none;
+      overflow: hidden;
+    }
+
+    .departure-board.active { display: block; }
+
+    .board-station {
+      padding: 12px 20px;
+      background: #cc0000;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .board-header {
+      display: grid;
+      grid-template-columns: 110px 1fr 90px 150px;
+      padding: 12px 20px;
+      border-bottom: 2px solid #ffd700;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #ffd700;
+      background: #0a0a0a;
+    }
+
+    .departure-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 90px 150px;
+      padding: 13px 20px;
+      border-bottom: 1px solid rgba(255,215,0,0.15);
+      font-size: 15px;
+      font-weight: 700;
+      align-items: center;
+      background: #0a0a0a;
+      color: #ffd700;
+    }
+
+    .departure-row:last-child { border-bottom: none; }
+
+    .departure-row.status-red  { background: #CC0066; color: #FFFFFF; }
+    .departure-row.status-red .dep-line { background: #FFFFFF; color: #CC0066; }
+    .departure-row.status-red .status-badge { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); }
+
+    .departure-row.status-orange { background: #FFAA00; color: #000000; }
+    .departure-row.status-orange .dep-line { background: #000000; color: #FFAA00; }
+    .departure-row.status-orange .dep-time .delay { color: #5a3000; }
+    .departure-row.status-orange .status-badge { background: rgba(0,0,0,0.12); color: #3a1f00; border: 1px solid rgba(0,0,0,0.2); }
+
+    .departure-row.status-green { background: #0a0a0a; color: #ffd700; }
+
+    .dep-line {
+      text-align: center;
+      padding: 3px 6px;
+      background: #ffd700;
+      color: #000;
+      font-weight: 900;
+      font-size: 13px;
+      border-radius: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dep-direction { padding: 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dep-platform  { text-align: center; font-size: 13px; opacity: 0.85; }
+
+    .dep-time {
+      text-align: right;
+      font-weight: 900;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 1px 5px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .status-badge-icon { font-style: normal; font-size: 13px; line-height: 1; }
+
+    .dep-time .delay  { color: #ff8080; font-size: 11px; }
+    .dep-time .cancelled { color: #ffaacc; text-decoration: line-through; }
+
+    .refresh-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #1a1a1a;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      padding: 12px 20px;
+      background: #111;
+      border-top: 1px solid #333;
+      font-size: 11px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 7px; color: #aaa; }
+
+    .legend-swatch {
+      width: 28px; height: 14px; border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 900;
+    }
+
+    .legend-swatch.red    { background: #CC0066; color: #fff; }
+    .legend-swatch.orange { background: #FFAA00; color: #000; }
+    .legend-swatch.green  { background: #333;    color: #ffd700; }
+
+    .status-msg {
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      border-left: 4px solid;
+      display: none;
+    }
+
+    .status-msg.error { background: #fff0f0; border-color: #cc0000; color: #cc0000; display: block; }
+    .status-msg.info  { background: #f0f8ff; border-color: #0066cc; color: #0066cc; display: block; }
+
+    .loading {
+      text-align: center; padding: 40px; color: #888; font-size: 15px; display: none;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid #ddd;
+      border-top-color: #cc0000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── INFO MODAL ───────────────────────────────────────────── */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 1000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: #fff;
+      border: 3px solid #333;
+      max-width: 720px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+      transform: translateY(-12px);
+      transition: transform 0.2s ease;
+      font-size: 14px;
+      line-height: 1.7;
+      flex-shrink: 0;
+    }
+
+    .modal-backdrop.open .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 28px;
+      border-bottom: 2px solid #333;
+      background: #0a0a0a;
+      color: #ffd700;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .modal-close {
+      background: none;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      cursor: pointer;
+      font-family: 'Courier Prime', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { background: #ffd700; color: #0a0a0a; }
+    .modal-close:focus-visible { outline: 2px solid #cc0000; outline-offset: 3px; }
+
+    .modal-body { padding: 28px; }
+
+    .modal-section { margin-bottom: 28px; }
+    .modal-section:last-child { margin-bottom: 0; }
+
+    .modal-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #999;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+
+    .modal-section p { margin-bottom: 10px; color: #444; }
+    .modal-section p:last-child { margin-bottom: 0; }
+
+    /* Farb-Demo-Tabelle */
+    .color-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+
+    .color-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .color-table td { padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .color-table tr:last-child td { border-bottom: none; }
+
+    .color-swatch-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .color-swatch-row.red    { background: #CC0066; color: #fff; }
+    .color-swatch-row.orange { background: #FFAA00; color: #000; }
+    .color-swatch-row.dark   { background: #0a0a0a; color: #ffd700; }
+
+    .contrast-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .contrast-badge.aaa { background: #e8f5e9; color: #1b5e20; border-color: #81c784; }
+    .contrast-badge.aa  { background: #fff8e1; color: #e65100; border-color: #ffcc02; }
+
+    /* Technischer Stack */
+    .tech-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+    .tech-list li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 13px;
+      color: #444;
+    }
+
+    .tech-label {
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #333;
+      min-width: 120px;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Copyright / Kontakt */
+    .contact-block {
+      background: #f9f9f9;
+      border: 2px solid #ddd;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .contact-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #111;
+    }
+
+    .contact-year { font-size: 12px; color: #999; margin-top: -6px; }
+
+    .contact-links { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+    .contact-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #333;
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s;
+    }
+
+    .contact-link:hover { color: #cc0000; }
+    .contact-link:focus-visible { outline: 2px solid #cc0000; outline-offset: 2px; }
+
+    .contact-link svg { flex-shrink: 0; }
+
+    .modal-footer {
+      padding: 14px 28px;
+      background: #f5f5f5;
+      border-top: 2px solid #ddd;
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+
+    @media (max-width: 760px) {
+      .container { padding: 20px; }
+      .controls { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+      .board-header, .departure-row {
+        grid-template-columns: 90px 1fr 150px;
+        font-size: 13px;
+      }
+      .dep-platform { display: none; }
+      .logo { font-size: 24px; }
+      .time-display { font-size: 20px; }
+      .modal-body { padding: 20px; }
+      .modal-backdrop { padding: 10px; }
+      .tech-label { min-width: 90px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .loading::after { animation: none; }
+      .modal-backdrop, .modal { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">🚉 <span>Abfahrten</span></div>
+
+    <div class="header-center">
+      <button class="btn-info" id="infoBtn" aria-haspopup="dialog" aria-controls="infoModal">
+        <span>Informationen über das Projekt</span>
+      </button>
+    </div>
+
+    <div class="time-display" id="timeDisplay">--:--</div>
+  </header>
+
+  <!-- INFO MODAL -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal" id="infoModal">
+
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">📋 Projektinformationen</div>
+        <button class="modal-close" id="modalClose" aria-label="Modal schließen">✕</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- TECHNISCHER ÜBERBLICK -->
+        <div class="modal-section">
+          <div class="modal-section-title">Technischer Aufbau</div>
+          <p>Dieses Tool ist eine statische, serverseitige HTML-Anwendung ohne Backend – alle Daten werden direkt im Browser über eine öffentliche REST-API abgerufen.</p>
+          <ul class="tech-list">
+            <li>
+              <span class="tech-label">API</span>
+              <span><strong>v6.bvg.transport.rest</strong> – Community-Projekt von Jannis R. (derhuerst), basierend auf dem BVG-HAFAS-Backend. Kostenlos, kein API-Key erforderlich, CORS aktiviert. Liefert Echtzeit-Abfahrten inkl. Verspätungen und Ausfällen.</span>
+            </li>
+            <li>
+              <span class="tech-label">Stationssuche</span>
+              <span><code>/locations?query=…&stops=true</code> – Freitextsuche nach Haltestellen, gibt eine Liste mit IDs, Namen und verfügbaren Verkehrsmitteln zurück.</span>
+            </li>
+            <li>
+              <span class="tech-label">Abfahrten</span>
+              <span><code>/stops/{id}/departures?results=25&duration=90</code> – Gibt die nächsten Abfahrten der gewählten Haltestelle mit Echtzeit-Daten zurück: tatsächliche Abfahrtszeit, Verspätung in Sekunden, Gleis, Richtung, Linienname.</span>
+            </li>
+            <li>
+              <span class="tech-label">Auto-Refresh</span>
+              <span>Die Anzeige aktualisiert sich automatisch alle 30 Sekunden, solange eine Station aktiv ist. Ein Countdown zeigt die verbleibende Zeit bis zum nächsten Abruf.</span>
+            </li>
+            <li>
+              <span class="tech-label">Technologien</span>
+              <span>Reines HTML5 / CSS3 / Vanilla JavaScript – keine Frameworks, keine Build-Tools, keine Abhängigkeiten außer Google Fonts (Courier Prime).</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- FARBWAHL -->
+        <div class="modal-section">
+          <div class="modal-section-title">Farbwahl & Barrierefreiheit</div>
+          <p>Die Statusfarben wurden so gewählt, dass sie sowohl aus größerer Entfernung erkennbar als auch für Menschen mit Farbsehschwäche unterscheidbar sind. Grundlage sind <strong>WCAG 2.2</strong> und die deutsche <strong>BITV 2.0</strong>.</p>
+          <p>Das größte Problem klassischer Rot-Gelb-Grün-Systeme: Rot-Grün-Schwäche (Deuteranopie / Protanopie) betrifft ca. 8 % aller Männer – für sie sind reines Rot und reines Orange kaum zu unterscheiden. Die gewählte Farbpalette löst dies durch <strong>unterschiedliche Leuchtkraft (Luminanz)</strong> statt nur unterschiedliche Farbtöne.</p>
+          <table class="color-table">
+            <thead>
+              <tr>
+                <th>Zustand</th>
+                <th>Vorschau</th>
+                <th>Hintergrund</th>
+                <th>Schrift</th>
+                <th>Kontrast</th>
+                <th>Warum</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Kritisch (&lt; 2 Min)</td>
+                <td><span class="color-swatch-row red"><i>●</i> Kritisch</span></td>
+                <td><code>#CC0066</code></td>
+                <td><code>#FFFFFF</code></td>
+                <td><span class="contrast-badge aa">AA · 5,4:1</span></td>
+                <td>Magenta-Rot enthält einen Blauanteil, der es von Amber klar trennt – auch für Protanopen erscheint es als helles Pink, nicht als Braun.</td>
+              </tr>
+              <tr>
+                <td>Warnung (2–5 Min)</td>
+                <td><span class="color-swatch-row orange"><i>⚠</i> Warnung</span></td>
+                <td><code>#FFAA00</code></td>
+                <td><code>#000000</code></td>
+                <td><span class="contrast-badge aaa">AAA · 11:1</span></td>
+                <td>Bernstein/Amber liegt im Gelbbereich – der einzige Farbton, den alle Typen von Farbblindheit zuverlässig wahrnehmen. Schwarz auf Amber übertrifft WCAG AAA deutlich.</td>
+              </tr>
+              <tr>
+                <td>Pünktlich / neutral</td>
+                <td><span class="color-swatch-row dark">RE 1 Hamburg</span></td>
+                <td><code>#0A0A0A</code></td>
+                <td><code>#FFD700</code></td>
+                <td><span class="contrast-badge aaa">AAA · 14:1</span></td>
+                <td>Klassisches Anzeige-Board-Design (Split-Flap). Hohe Lesbarkeit bei schlechten Lichtverhältnissen und auf Distanz.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="margin-top:14px;">Zusätzlich werden nach <strong>WCAG 1.4.1</strong> alle Statusinfos nicht nur durch Farbe, sondern auch durch eindeutige <strong>Symbole und Textlabel</strong> kommuniziert (●&nbsp;Kritisch · ⚠&nbsp;Warnung · ✕&nbsp;Ausfall), sodass die Tafel auch in Graustufen und für Screenreader vollständig nutzbar bleibt.</p>
+        </div>
+
+        <!-- COPYRIGHT / KONTAKT -->
+        <div class="modal-section">
+          <div class="modal-section-title">Urheber & Kontakt</div>
+          <div class="contact-block">
+            <div>
+              <div class="contact-name">Christian Sysa</div>
+              <div class="contact-year">© 2026 – Alle Rechte vorbehalten</div>
+            </div>
+            <div class="contact-links">
+              <a class="contact-link" href="https://linkedin.com/in/christiansysa" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn-Profil von Christian Sysa (öffnet in neuem Tab)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                linkedin.com/in/christiansysa
+              </a>
+              <a class="contact-link" href="mailto:christian.sysa@web.de" aria-label="E-Mail an Christian Sysa senden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <path d="m2 7 10 7 10-7"/>
+                </svg>
+                christian.sysa@web.de
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /modal-body -->
+
+      <div class="modal-footer">
+        Datenquelle: v6.bvg.transport.rest &nbsp;·&nbsp; Kein API-Schlüssel erforderlich &nbsp;·&nbsp; Open-Source Community API
+      </div>
+
+    </div><!-- /modal -->
+  </div><!-- /modal-backdrop -->
+
+  <!-- MAIN UI -->
+  <div class="api-info">
+    Quelle: <strong>v6.bvg.transport.rest</strong> &mdash; BVG Community-API &mdash;
+    kein API-Schlüssel &mdash; Echtzeit inkl. S-Bahn, U-Bahn, Bus, Regional (Berlin/Brandenburg)
+  </div>
+<div class="prototype-info">
+  <div class="prototype-info-header">
+    <span class="prototype-badge"><strong>Prototyp</strong></span>
+    <span class="prototype-title"><strong>Farbcodiertes Echtzeit-Abfahrtssystem</strong></span>
+  </div>
+  <br><br>
+  <p>
+    Dieses Tool demonstriert, wie ein farbcodiertes Echtzeit-Warnsystem in einer
+    öffentlichen Abfahrtsanzeige – etwa an Bahnhöfen oder Haltestellen – aussehen könnte.
+    Farbliche und symbolische Statusindikatoren zeigen auf einen Blick, wie viel Zeit
+    bis zur nächsten Abfahrt bleibt, auch ohne die Anzeige genau lesen zu müssen.
+<br><br>
+    Weitere Informationen zum Konzept, zur technischen Umsetzung und zu den
+    Barrierefreiheitsrichtlinien findest du über den Button
+    <strong>„Informationen über das Projekt"</strong> oben.
+<br><br>
+  </p>
+</div>
+
+  <div class="status-msg" id="statusMsg" role="alert"></div>
+
+  <div class="controls">
+    <div class="select-section">
+      <label for="stationSearch">Bahnhof / Haltestelle suchen</label>
+      <input
+        type="text"
+        class="search-input"
+        id="stationSearch"
+        placeholder="z.B. Alexanderplatz, Hauptbahnhof..."
+        autocomplete="off"
+        aria-autocomplete="list"
+        aria-controls="searchResults"
+        aria-label="Haltestelle suchen"
+      >
+      <ul class="search-results" id="searchResults" role="listbox" aria-label="Haltestellen-Vorschläge"></ul>
+    </div>
+    <button class="btn" id="loadBtn" aria-label="Abfahrten anzeigen">Anzeigen</button>
+  </div>
+
+  <div class="loading" id="loading" role="status" aria-live="polite">Lade Daten</div>
+
+  <div class="departure-board" id="departureBoard" aria-label="Abfahrtstafel">
+    <div class="board-station" role="heading" aria-level="2">
+      <span id="boardStationName">—</span>
+      <span id="boardStopId" style="font-size:11px;opacity:0.7;"></span>
+    </div>
+    <div class="board-header" role="row" aria-hidden="true">
+      <div>Linie</div>
+      <div>Ziel</div>
+      <div>Gleis</div>
+      <div style="text-align:right;">Abfahrt</div>
+    </div>
+    <div id="departuresList" role="list"></div>
+    <div class="legend" aria-label="Legende">
+      <div class="legend-item">
+        <div class="legend-swatch red" aria-hidden="true">●</div>
+        <span>● Kritisch &lt; 2 Min / Ausfall</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch orange" aria-hidden="true">⚠</div>
+        <span>⚠ Warnung 2–5 Min / verspätet</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch green" aria-hidden="true">—</div>
+        <span>Pünktlich / &gt; 5 Min</span>
+      </div>
+    </div>
+    <div class="refresh-bar">
+      <span id="lastUpdate">—</span>
+      <span id="refreshCountdown">Aktualisierung in 30s</span>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  const API_BASE = 'https://v6.bvg.transport.rest';
+
+  let currentStopId = null;
+  let currentStopName = null;
+  let refreshTimer = null;
+  let countdownInterval = null;
+  let countdownVal = 30;
+
+  let searchController = null;
+  let departuresController = null;
+  const stationCache = new Map();
+  const departuresCache = new Map();
+
+  const timeDisplay     = document.getElementById('timeDisplay');
+  const stationSearch   = document.getElementById('stationSearch');
+  const searchResultsEl = document.getElementById('searchResults');
+  const loadBtn         = document.getElementById('loadBtn');
+  const statusMsg       = document.getElementById('statusMsg');
+  const loadingEl       = document.getElementById('loading');
+  const departureBoard  = document.getElementById('departureBoard');
+  const infoBtn         = document.getElementById('infoBtn');
+  const modalBackdrop   = document.getElementById('modalBackdrop');
+  const modalClose      = document.getElementById('modalClose');
+
+  /* ── Clock ─────────────────────────────────────────────────── */
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateClock() {
+    const d = new Date();
+    timeDisplay.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  /* ── Modal ──────────────────────────────────────────────────── */
+
+  function openModal() {
+    modalBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    modalClose.focus();
+  }
+
+  function closeModal() {
+    modalBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    infoBtn.focus();
+  }
+
+  infoBtn.addEventListener('click', openModal);
+  modalClose.addEventListener('click', closeModal);
+
+  // Schließen bei Klick auf Backdrop (außerhalb des Modals)
+  modalBackdrop.addEventListener('click', e => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  // Schließen mit Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal();
+  });
+
+  // Fokus-Trap im Modal
+  modalBackdrop.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const focusable = [...modalBackdrop.querySelectorAll(
+      'button, a[href], input, [tabindex]:not([tabindex="-1"])'
+    )].filter(el => !el.disabled);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { last.focus(); e.preventDefault(); }
+    } else {
+      if (document.activeElement === last) { first.focus(); e.preventDefault(); }
+    }
+  });
+
+  /* ── Status ─────────────────────────────────────────────────── */
+
+  function showStatus(msg, type = 'info') {
+    statusMsg.textContent = msg;
+    statusMsg.className   = `status-msg ${type}`;
+  }
+
+  function hideStatus() {
+    statusMsg.className   = 'status-msg';
+    statusMsg.textContent = '';
+  }
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+
+  /* ── Station search ─────────────────────────────────────────── */
+
+  async function fetchStations(query) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (stationCache.has(normalizedQuery)) {
+    return stationCache.get(normalizedQuery);
+  }
+
+  if (searchController) searchController.abort();
+  searchController = new AbortController();
+
+  const timeoutId = setTimeout(() => searchController.abort(), 7000);
+
+  try {
+    const url = `${API_BASE}/locations?query=${encodeURIComponent(query)}&results=10&stops=true&addresses=false&poi=false`;
+    const res = await fetch(url, {
+      signal: searchController.signal,
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        throw new Error('Zu viele Anfragen. Bitte kurz warten.');
+      }
+      throw new Error(`Stationssuche fehlgeschlagen: HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    stationCache.set(normalizedQuery, data);
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Suche abgebrochen oder Zeitüberschreitung');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+  async function handleSearchInput(e) {
+    const q = e.target.value.trim();
+    if (q.length < 2) {
+      searchResultsEl.classList.remove('active');
+      searchResultsEl.innerHTML = '';
+      return;
+    }
+    try {
+      const items = await fetchStations(q);
+      const stops = items.filter(i => i.type === 'stop' || i.type === 'station').slice(0, 15);
+
+      if (!stops.length) {
+        searchResultsEl.innerHTML = '<li role="option">Keine Haltestellen gefunden</li>';
+        searchResultsEl.classList.add('active');
+        return;
+      }
+
+      searchResultsEl.innerHTML = stops.map(s => {
+        const safeName = s.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeId   = String(s.id).replace(/'/g, '');
+        const products = s.products
+          ? Object.entries(s.products).filter(([, v]) => v).map(([k]) => k).join(' · ')
+          : '';
+        return `
+          <li role="option" tabindex="0"
+              onclick="selectStation('${safeId}', '${safeName}')"
+              onkeypress="if(event.key==='Enter') selectStation('${safeId}', '${safeName}')">
+            ${s.name}
+            <span class="stop-meta">${safeId}${products ? ' &nbsp;·&nbsp; ' + products : ''}</span>
+          </li>`;
+      }).join('');
+
+      searchResultsEl.classList.add('active');
+    } catch (err) {
+  if (
+    err.message === 'Suche abgebrochen oder Zeitüberschreitung' ||
+    err.name === 'AbortError'
+  ) {
+    return;
+  }
+
+  searchResultsEl.innerHTML = `<li>Fehler: ${err.message}</li>`;
+  searchResultsEl.classList.add('active');
+}
+  }
+
+  stationSearch.addEventListener('input', debounce(handleSearchInput, 650));
+
+  window.selectStation = function(id, name) {
+    currentStopId   = id;
+    currentStopName = name;
+    stationSearch.value = name;
+    searchResultsEl.classList.remove('active');
+    hideStatus();
+  };
+
+  document.addEventListener('click', e => {
+    if (!document.querySelector('.select-section').contains(e.target))
+      searchResultsEl.classList.remove('active');
+  });
+
+  /* ── Parse departures ───────────────────────────────────────── */
+
+  function parseDepartures(raw, now) {
+    return raw
+      .filter(dep => {
+        const t = dep.when || dep.plannedWhen;
+        return t && new Date(t).getTime() >= now.getTime() - 60_000;
+      })
+      .map(dep => {
+        const plannedTime = dep.plannedWhen ? new Date(dep.plannedWhen) : null;
+        const realTime    = dep.when        ? new Date(dep.when)        : (plannedTime ?? new Date());
+        const cancelled   = dep.cancelled ?? false;
+        const delaySec    = dep.delay ?? 0;
+        const delayed     = delaySec > 60;
+        const diffMs      = realTime.getTime() - now.getTime();
+        return {
+          line:         dep.line?.name || dep.line?.fahrtNr || '?',
+          destination:  dep.direction  || 'Unbekannt',
+          platform:     dep.platform   || dep.plannedPlatform || '?',
+          plannedTime:  plannedTime ?? realTime,
+          realTime,
+          delayed,
+          cancelled,
+          minutesLeftReal:    Math.round(diffMs / 60_000),
+          minutesLeftPlanned: Math.round((plannedTime.getTime() - now.getTime()) / 60_000),
+          delayMinutes: Math.round(delaySec / 60)
+        };
+      })
+      .sort((a, b) => a.realTime - b.realTime)
+      .slice(0, 20);
+  }
+
+  /* ── Render ─────────────────────────────────────────────────── */
+
+  function renderDepartures(deps, now) {
+    const list = document.getElementById('departuresList');
+
+    list.innerHTML = deps.map(dep => {
+    let cls = 'status-green';
+
+    if (dep.cancelled) {
+      cls = 'status-red';
+    } else if (dep.minutesLeftReal < 2) {
+      cls = 'status-red';
+    } else if (dep.minutesLeftReal <= 5) {
+      cls = 'status-orange';
+    }
+
+      const hh = pad(dep.realTime.getHours());
+      const mm = pad(dep.realTime.getMinutes());
+      const ts = `${hh}:${mm}`;
+
+      let badgeHtml = '';
+      if (dep.cancelled) {
+        badgeHtml = `<span class="status-badge" aria-label="Ausfall"><i class="status-badge-icon" aria-hidden="true">✕</i> Ausfall</span>`;
+      } else if (dep.minutesLeftReal < 2) {
+        badgeHtml = `<span class="status-badge" aria-label="Kritisch"><i class="status-badge-icon" aria-hidden="true">●</i> Kritisch</span>`;
+      } else if (dep.minutesLeftReal <= 5 || dep.delayed) {
+        badgeHtml = `<span class="status-badge" aria-label="Warnung"><i class="status-badge-icon" aria-hidden="true">⚠</i> Warnung</span>`;
+      }
+
+      let timeHtml = '';
+      if (dep.cancelled) {
+        timeHtml = `<span class="cancelled" aria-label="Geplant ${ts}, Ausfall">${ts}</span>`;
+      } else if (dep.minutesLeftReal <= 0) {
+        timeHtml = `<span>JETZT</span>`;
+      } else if (dep.minutesLeftReal < 60) {
+        timeHtml = `<span>${dep.minutesLeftReal} min</span>`;
+        if (dep.delayed) {
+          const ph = pad(dep.plannedTime.getHours());
+          const pm = pad(dep.plannedTime.getMinutes());
+          timeHtml += `<span class="delay">Plan ${ph}:${pm} (+${dep.delayMinutes} Min)</span>`;
+        }
+      } else {
+        timeHtml = `<span>${ts}</span>`;
+        if (dep.delayed) timeHtml += `<span class="delay">+${dep.delayMinutes} Min</span>`;
+      }
+
+      const ariaStatus = dep.cancelled ? 'Ausfall' :
+                         dep.minutesLeftReal < 2 ? 'Kritisch, weniger als 2 Minuten' :
+                         (dep.minutesLeftReal <= 5 || dep.delayed) ? 'Warnung, verspätet' : 'pünktlich';
+
+      return `
+        <div class="departure-row ${cls}" role="listitem"
+             aria-label="Linie ${dep.line}, Richtung ${dep.destination}, Gleis ${dep.platform}, ${ariaStatus}">
+          <div class="dep-line" aria-hidden="true">${dep.line}</div>
+          <div class="dep-direction" aria-hidden="true">${dep.destination}</div>
+          <div class="dep-platform" aria-hidden="true">Gl.&nbsp;${dep.platform}</div>
+          <div class="dep-time" aria-hidden="true">${badgeHtml}${timeHtml}</div>
+        </div>`;
+    }).join('') || `<div style="padding:20px;color:#888;text-align:center;" role="listitem">Keine Abfahrten gefunden</div>`;
+
+    document.getElementById('boardStationName').textContent = currentStopName || '—';
+    document.getElementById('boardStopId').textContent      = currentStopId   ? `ID ${currentStopId}` : '';
+    document.getElementById('lastUpdate').textContent =
+      `Aktualisiert: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  }
+
+  function updateCountdown() {
+    document.getElementById('refreshCountdown').textContent = `Aktualisierung in ${countdownVal}s`;
+  }
+
+  /* ── Load ───────────────────────────────────────────────────── */
+
+  async function loadDepartures() {
+  if (!currentStopId) {
+    showStatus('Bitte zuerst eine Haltestelle auswählen.', 'error');
+    return;
+  }
+
+  hideStatus();
+  loadingEl.style.display = 'block';
+  departureBoard.classList.remove('active');
+  clearTimeout(refreshTimer);
+  clearInterval(countdownInterval);
+
+  const cacheKey = currentStopId;
+  const cached = departuresCache.get(cacheKey);
+  const now = new Date();
+
+  if (cached && (Date.now() - cached.timestamp < 15000)) {
+    loadingEl.style.display = 'none';
+    renderDepartures(cached.data, now);
+    departureBoard.classList.add('active');
+
+    countdownVal = 30;
+    updateCountdown();
+    countdownInterval = setInterval(() => {
+      if (--countdownVal <= 0) countdownVal = 30;
+      updateCountdown();
+    }, 1000);
+    refreshTimer = setTimeout(loadDepartures, 30000);
+    return;
+  }
+
+  try {
+    if (departuresController) departuresController.abort();
+    departuresController = new AbortController();
+
+    const timeoutId = setTimeout(() => departuresController.abort(), 8000);
+
+    const url = `${API_BASE}/stops/${currentStopId}/departures?results=20&duration=60&stopovers=false`;
+    const res = await fetch(url, {
+      signal: departuresController.signal,
+      headers: { 'Accept': 'application/json' }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        throw new Error('Zu viele API-Anfragen. Bitte kurz warten.');
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = Array.isArray(data) ? data : (data.departures ?? []);
+    const deps = parseDepartures(raw, now);
+
+    departuresCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: deps
+    });
+
+    loadingEl.style.display = 'none';
+
+    if (!deps.length) {
+      showStatus('Keine Abfahrten in den nächsten 60 Minuten gefunden.', 'info');
+      return;
+    }
+
+    renderDepartures(deps, now);
+    departureBoard.classList.add('active');
+
+    countdownVal = 30;
+    updateCountdown();
+    countdownInterval = setInterval(() => {
+      if (--countdownVal <= 0) countdownVal = 30;
+      updateCountdown();
+    }, 1000);
+
+    refreshTimer = setTimeout(loadDepartures, 30000);
+  } catch (err) {
+    console.error(err);
+    loadingEl.style.display = 'none';
+
+    if (err.name === 'AbortError') {
+      showStatus('Zeitüberschreitung beim Laden. Bitte erneut versuchen.', 'error');
+      return;
+    }
+
+    showStatus(`Fehler: ${err.message}`, 'error');
+  }
+}
+
+  loadBtn.addEventListener('click', loadDepartures);
+
+  stationSearch.addEventListener('keypress', e => {
+    if (e.key === 'Enter') { e.preventDefault(); if (currentStopId) loadDepartures(); }
+  });
+</script>
+</body>
+</html>
